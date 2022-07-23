@@ -25,7 +25,7 @@ public struct MetalView: Representable {
 	}
 	private var drawingMode: drawingModeType
 	private var onDrawCallback: ((CAMetalDrawable, MTLRenderPassDescriptor, CGSize) -> Void)? = nil
-
+	private var onKeyboardCallback: (())
 	public init(device: MTLDevice? = nil, drawingMode: drawingModeType = .Timed){
 		if let _ = device {
 			self.device = MTLCreateSystemDefaultDevice()
@@ -127,11 +127,6 @@ public struct MetalView: Representable {
 				onDrawCallback(drawable, rpe, size)
 			}
 		}
-
-
-
-
-
 	}
 }
 
