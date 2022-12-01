@@ -14,41 +14,52 @@ typealias Representable = UIViewRepresentable
 typealias Representable = NSViewRepresentable
 #endif
 
+/// MetalView is a platform agnostic representation of an MTKView
+///
 public struct MetalView: Representable {
-	
 	private var clearColor: MTLClearColor?
 	private var colorPixelFormat: MTLPixelFormat?
 	private var depthPixelFormat: MTLPixelFormat?
 	private var device: MTLDevice?
+	private var commandQueue: MTLCommandQueue?
 	public enum drawingModeType{
 		case Timed, Notifications, Explicit
 	}
+	public typealias DrawCallFunction = ((MTKView, MTLCommandQueue, CGSize) -> Void)
 	private var drawingMode: drawingModeType
-	private var onDrawCallback: ((CAMetalDrawable, MTLRenderPassDescriptor, CGSize) -> Void)? = nil
-	private var onKeyboardCallback: (())
-	public init(device: MTLDevice? = nil, drawingMode: drawingModeType = .Timed){
-		if let _ = device {
-			self.device = MTLCreateSystemDefaultDevice()
-		} else {
-			self.device = device
-		}
-		self.drawingMode = drawingMode
-	}
-	
+	private var onDrawCallback: DrawCallFunction? = nil
+//	private var onKeyboardCallback: (())
+//	public init(device: MTLDevice? = nil, drawingMode: drawingModeType = .Timed){
+//		if let _ = device {
+//			self.device = MTLCreateSystemDefaultDevice()
+//		} else {
+//			self.device = device
+//		}
+//		self.drawingMode = drawingMode
+//	}
+//
 	public init(device: MTLDevice? = nil,
 				drawingMode: drawingModeType = .Timed,
-				clearColor: MTLClearColor,
-				colorPixelFormat: MTLPixelFormat,
-				depthPixelFormat: MTLPixelFormat){
-		self.clearColor = clearColor
-		self.colorPixelFormat = colorPixelFormat
-		self.depthPixelFormat = depthPixelFormat
+				clearColor: MTLClearColor? = nil,
+				colorPixelFormat: MTLPixelFormat? = nil,
+				depthPixelFormat: MTLPixelFormat? = nil){
+		if let _ = clearColor {
+			self.clearColor = clearColor!
+		}
+		if let _ = colorPixelFormat {
+			self.colorPixelFormat = colorPixelFormat
+
+		}
+		if let _ = depthPixelFormat {
+			self.depthPixelFormat = depthPixelFormat
+		}
 		if let _ = device {
 			self.device = MTLCreateSystemDefaultDevice()
 		} else {
 			self.device = device
 		}
 		self.drawingMode = drawingMode
+		commandQueue = self.device?.makeCommandQueue()
 	}
 	private func setDrawingMode(for view: MTKView) -> MTKView{
 		let result = view
@@ -98,10 +109,10 @@ public struct MetalView: Representable {
 	}
 	#endif
 
-	public func onDraw( perform action: ((CAMetalDrawable, MTLRenderPassDescriptor, CGSize) -> Void)? = nil) -> some View {
+	public func onDraw( perform action: DrawCallFunction? = nil) -> some View {
 		var result = self
-		if let action = action {
-			result.onDrawCallback = action
+		if let _ = action {
+			result.onDrawCallback = action!
 		}
 		return result
 	}
@@ -120,11 +131,10 @@ public struct MetalView: Representable {
 		}
 
 		public func draw(in view: MTKView) {
-			guard let drawable = view.currentDrawable else {return}
 			if let onDrawCallback = parent.onDrawCallback,
-			   let rpe = view.currentRenderPassDescriptor,
-			   let size = size {
-				onDrawCallback(drawable, rpe, size)
+			   let frameSize = size,
+			   let command = parent.commandQueue {
+				onDrawCallback(view, command, frameSize)
 			}
 		}
 	}
