@@ -54,12 +54,17 @@ public struct MetalView: Representable {
 			self.depthPixelFormat = depthPixelFormat
 		}
 		if let _ = device {
-			self.device = MTLCreateSystemDefaultDevice()
-		} else {
 			self.device = device
+		} else {
+			self.device = MTLCreateSystemDefaultDevice()
+
 		}
 		self.drawingMode = drawingMode
-		commandQueue = self.device?.makeCommandQueue()
+		if let cQ = self.device?.makeCommandQueue(){
+			self.commandQueue = cQ
+		} else {
+			fatalError("Could noto init commmand queue")
+		}
 	}
 	private func setDrawingMode(for view: MTKView) -> MTKView{
 		let result = view
