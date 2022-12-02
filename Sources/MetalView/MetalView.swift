@@ -69,18 +69,12 @@ public struct MetalView: Representable {
 				drawingMode: drawingModeType = .Timed,
 				clearColor: MTLClearColor? = nil,
 				colorPixelFormat: MTLPixelFormat? = nil,
-				depthPixelFormat: MTLPixelFormat? = nil
-				framesPerPixel: Int? = nil){
-		if let _ = clearColor {
-			self.clearColor = clearColor!
-		}
-		if let _ = colorPixelFormat {
-			self.colorPixelFormat = colorPixelFormat
-
-		}
-		if let _ = depthPixelFormat {
-			self.depthPixelFormat = depthPixelFormat
-		}
+				depthPixelFormat: MTLPixelFormat? = nil,
+				framesPerSecond: Int? = nil){
+		self.clearColor = clearColor!
+		self.colorPixelFormat = colorPixelFormat
+		self.depthPixelFormat = depthPixelFormat
+		
 		if let _ = device {
 			self.device = device
 		} else {
@@ -88,6 +82,7 @@ public struct MetalView: Representable {
 
 		}
 		self.drawingMode = drawingMode
+		self.framesPerSecond = framesPerSecond
 	}
 	private func setDrawingMode(for view: MTKView) -> MTKView{
 		let result = view
@@ -117,6 +112,9 @@ public struct MetalView: Representable {
 		}
 		if let _ = self.depthPixelFormat {
 			mtkView.depthStencilPixelFormat = depthPixelFormat!
+		}
+		if let _ = self.framesPerSecond {
+			mtkView.framesPerSecond = self.framesPerSecond!
 		}
 		mtkView.delegate = context.coordinator
 		return mtkView
