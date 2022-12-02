@@ -19,8 +19,9 @@ public struct MetalView: Representable {
 	private var clearColor: MTLClearColor?
 	private var colorPixelFormat: MTLPixelFormat?
 	private var depthPixelFormat: MTLPixelFormat?
+	private var framesPerSecond: Int?
 	private var device: MTLDevice?
-	private var commandQueue: MTLCommandQueue?
+	//private var commandQueue: MTLCommandQueue?
 	/// Set the isPaused and enableSetNeedsDisplay on the MTKView based on how we want to draw
 	public enum drawingModeType{
 		/// We expect the drawing loop to get called on each refresh.
@@ -32,7 +33,9 @@ public struct MetalView: Representable {
 		/// Will set isPaused to true and enableSetNeedsDisplay to false
 		case Explicit
 	}
-	public typealias DrawCallFunction = ((MTKView, MTLCommandQueue, CGSize) -> Void)
+	/// typealias for the main draw callback function used by the view. The function used will be the 
+	/// main loop
+	public typealias DrawCallFunction = ((MTKView) -> Void)
 	private var drawingMode: drawingModeType
 	private var onDrawCallback: DrawCallFunction? = nil
 //	private var onKeyboardCallback: (())
@@ -66,7 +69,8 @@ public struct MetalView: Representable {
 				drawingMode: drawingModeType = .Timed,
 				clearColor: MTLClearColor? = nil,
 				colorPixelFormat: MTLPixelFormat? = nil,
-				depthPixelFormat: MTLPixelFormat? = nil){
+				depthPixelFormat: MTLPixelFormat? = nil
+				framesPerPixel: Int? = nil){
 		if let _ = clearColor {
 			self.clearColor = clearColor!
 		}
@@ -84,11 +88,6 @@ public struct MetalView: Representable {
 
 		}
 		self.drawingMode = drawingMode
-		if let cQ = self.device?.makeCommandQueue(){
-			self.commandQueue = cQ
-		} else {
-			fatalError("Could noto init commmand queue")
-		}
 	}
 	private func setDrawingMode(for view: MTKView) -> MTKView{
 		let result = view
@@ -139,10 +138,10 @@ public struct MetalView: Representable {
 	#endif
 /**
  This function can be used to declaratively set the onDraw Function. onDraw will be the main render
- loop in the app/game.
+ loop in the app/game. You have to create the commandBuffer in your app.
 
  ```swift
-	.onDraw(){view, command, frameSize in
+	.onDraw(){view in
 			if let drawable = view.currentDrawable,
 				let commandBuffer = command.makeCommandBuffer(),
 				let renderPassDesciptor =  view.currentRenderPassDescriptor,
@@ -154,11 +153,9 @@ public struct MetalView: Representable {
 					commandBuffer.commit()
 		}
  ```
- - Parameter action: This is a function that takes three parameters described in ``DrawCallFunction
+ - Parameter action: This is a function that takes one parameters described in ``DrawCallFunction
  	1) An MTKView allows your render pass to get the currentDrawable and the
  	  currentRenderPassDescriptor
-  	2) The stored command buffer allows your render pass to get a renderCommandEncoder
-  	3) The framesize is the size of the view and your render pass can use it however.
  - Returns: a View
  */
 	public func onDraw( perform action: DrawCallFunction? = nil) -> some View {
@@ -186,10 +183,8 @@ public struct MetalView: Representable {
 		///  render cycle.
 		/// - Parameter view: The view we are drawing in.
 		public func draw(in view: MTKView) {
-			if let onDrawCallback = parent.onDrawCallback,
-			   let frameSize = size,
-			   let command = parent.commandQueue {
-				onDrawCallback(view, command, frameSize)
+			if let onDrawCallback = parent.onDrawCallback {
+				onDrawCallback( view )
 			}
 		}
 	}
