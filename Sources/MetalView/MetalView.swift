@@ -21,7 +21,7 @@ public struct MetalView: Representable {
 	private var depthPixelFormat: MTLPixelFormat?
 	private var framesPerSecond: Int?
 	private var device: MTLDevice?
-	//private var commandQueue: MTLCommandQueue?
+	private var commandQueue: MTLCommandQueue? = nil
 	/// Set the isPaused and enableSetNeedsDisplay on the MTKView based on how we want to draw
 	public enum drawingModeType{
 		/// We expect the drawing loop to get called on each refresh.
@@ -38,6 +38,7 @@ public struct MetalView: Representable {
 	public typealias DrawCallFunction = ((MTKView) -> Void)
 	private var drawingMode: drawingModeType
 	private var onDrawCallback: DrawCallFunction? = nil
+	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = nil
 //	private var onKeyboardCallback: (())
 //	public init(device: MTLDevice? = nil, drawingMode: drawingModeType = .Timed){
 //		if let _ = device {
@@ -163,6 +164,22 @@ public struct MetalView: Representable {
 		}
 		return result
 	}
+
+	/// This function will present a simpler solutioni to the end user. The view will manage the device
+	/// and the command queue. It iwill generate the Render command encoder and send that
+	/// to the call back function
+	/// - Parameter action: Function that takes a MTLRenderCommandEncoder in
+	/// - Returns: some view so iti can be used declaratively in SwiftUI
+	public func onRender(render action: ((MTLRenderCommandEncoder) -> Void)? = nil) -> some View {
+		var result = self
+		if let _ = result.onDrawCallback {
+			result.onDrawCallback = nil
+		}
+		result.commandQueue = result.device?.makeCommandQueue()
+		result.onRenderCallback = action
+		return result
+	}
+
 	public func makeCoordinator() -> MetalView.Coordinator {
 		Coordinator(self)
 	}
@@ -183,6 +200,16 @@ public struct MetalView: Representable {
 		public func draw(in view: MTKView) {
 			if let onDrawCallback = parent.onDrawCallback {
 				onDrawCallback( view )
+			} else if let onRenderCallback = parent.onRenderCallback {
+				if let drawable = view.currentDrawable,
+				   let commandBuffer = parent.commandQueue?.makeCommandBuffer(),
+				   let renderPassDesciptor =  view.currentRenderPassDescriptor,
+				   let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDesciptor){
+					onRenderCallback(renderCommandEncoder)
+					renderCommandEncoder.endEncoding()
+					commandBuffer.present(drawable)
+					commandBuffer.commit()
+				}
 			}
 		}
 	}
