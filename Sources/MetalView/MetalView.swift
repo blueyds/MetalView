@@ -114,7 +114,7 @@ public struct MetalView: Representable {
 			mtkView.depthStencilPixelFormat = depthPixelFormat!
 		}
 		if let _ = self.framesPerSecond {
-			mtkView.framesPerSecond = self.framesPerSecond!
+			mtkView.preferredFramesPerSecond = self.framesPerSecond!
 		}
 		mtkView.delegate = context.coordinator
 		return mtkView
