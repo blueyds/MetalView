@@ -37,7 +37,7 @@ public struct MetalView: Representable {
 	/// main loop
 	public typealias DrawCallFunction = ((MTKView) -> Void)
 	private var drawingMode: drawingModeType
-	private var onDrawCallback: DrawCallFunction? = nil
+	private var onMainLoopCallback: DrawCallFunction? = nil
 	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = nil
 	private var onSizeChangeCallback: ((CGSize) -> Void)? = nil
 //	private var onKeyboardCallback: (())
@@ -138,7 +138,8 @@ public struct MetalView: Representable {
 	#endif
 /**
  This function can be used to declaratively set the onDraw Function. onDraw will be the main render
- loop in the app/game. You have to create the commandBuffer in your app.
+ loop in the app/game. You have to create the commandBuffer in your app. You are responsible for calling all
+ render functions. if you set a .timed interval on initi then this function will be called once for each frame.
 
  ```swift
 	.onDraw(){view in
@@ -158,11 +159,12 @@ public struct MetalView: Representable {
  	  currentRenderPassDescriptor
  - Returns: a View
  */
-	public func onDraw( perform action: DrawCallFunction? = nil) -> MetalView {
+	public func onMainLoop( callBackFunction: @escaping DrawCallFunction) -> MetalView {
 		var result = self
-		if let _ = action {
-			result.onDrawCallback = action!
+		if let _ = result.onRenderCallback {
+			result.onRenderCallback = nil
 		}
+		result.onMainLoopCallback = callBackFunction
 		return result
 	}
 
@@ -173,8 +175,8 @@ public struct MetalView: Representable {
 	/// - Returns: some view so iti can be used declaratively in SwiftUI
 	public func onRender(render action: ((MTLRenderCommandEncoder) -> Void)? = nil) -> MetalView {
 		var result = self
-		if let _ = result.onDrawCallback {
-			result.onDrawCallback = nil
+		if let _ = result.onMainLoopCallback {
+			result.onMainLoopCallback = nil
 		}
 		result.commandQueue = result.device?.makeCommandQueue()
 		result.onRenderCallback = action
@@ -207,8 +209,8 @@ public struct MetalView: Representable {
 		///  render cycle.
 		/// - Parameter view: The view we are drawing in.
 		public func draw(in view: MTKView) {
-			if let onDrawCallback = parent.onDrawCallback {
-				onDrawCallback( view )
+			if let mainLoop = parent.onMainLoopCallback {
+				mainLoop( view )
 			} else if let onRenderCallback = parent.onRenderCallback {
 				if let drawable = view.currentDrawable,
 				   let commandBuffer = parent.commandQueue?.makeCommandBuffer(),
