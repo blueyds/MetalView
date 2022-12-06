@@ -158,7 +158,7 @@ public struct MetalView: Representable {
  	  currentRenderPassDescriptor
  - Returns: a View
  */
-	public func onDraw( perform action: DrawCallFunction? = nil) -> some View {
+	public func onDraw( perform action: DrawCallFunction? = nil) -> MetalView {
 		var result = self
 		if let _ = action {
 			result.onDrawCallback = action!
@@ -171,7 +171,7 @@ public struct MetalView: Representable {
 	/// to the call back function
 	/// - Parameter action: Function that takes a MTLRenderCommandEncoder in
 	/// - Returns: some view so iti can be used declaratively in SwiftUI
-	public func onRender(render action: ((MTLRenderCommandEncoder) -> Void)? = nil) -> some View {
+	public func onRender(render action: ((MTLRenderCommandEncoder) -> Void)? = nil) -> MetalView {
 		var result = self
 		if let _ = result.onDrawCallback {
 			result.onDrawCallback = nil
@@ -180,7 +180,7 @@ public struct MetalView: Representable {
 		result.onRenderCallback = action
 		return result
 	}
-	public func onSizeChange(_ callBack: @escaping ((CGSize)->Void))-> some View{
+	public func onSizeChange(_ callBack: @escaping ((CGSize)->Void))-> MetalView{
 		var result = self
 		result.onSizeChangeCallback = callBack
 		return result
