@@ -39,6 +39,7 @@ public struct MetalView: Representable {
 	private var drawingMode: drawingModeType
 	private var onDrawCallback: DrawCallFunction? = nil
 	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = nil
+	private var onSizeChangeCallback: ((CGSize) -> Void)? = nil
 //	private var onKeyboardCallback: (())
 //	public init(device: MTLDevice? = nil, drawingMode: drawingModeType = .Timed){
 //		if let _ = device {
@@ -179,6 +180,11 @@ public struct MetalView: Representable {
 		result.onRenderCallback = action
 		return result
 	}
+	public func onSizeChange(_ callBack: @escaping ((CGSize)->Void))-> some View{
+		var result = self
+		result.onSizeChangeCallback = callBack
+		return result
+	}
 
 	public func makeCoordinator() -> MetalView.Coordinator {
 		Coordinator(self)
@@ -190,8 +196,11 @@ public struct MetalView: Representable {
 		init(_ parent: MetalView){
 			self.parent = parent
 		}
-		public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-			self.size = size
+		public func mtkView(_ view: MTKView, drawableSizeWillChange newSize: CGSize) {
+			self.size = newSize
+			if let onSizeChangeCB = parent.onSizeChangeCallback {
+				onSizeChangeCB(newSize)
+			}
 		}
 
 		/// This delegate function will call the parents drawFunction if it exists. This is part of the
