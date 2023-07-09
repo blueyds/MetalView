@@ -98,7 +98,7 @@ public struct MetalView: Representable {
 				colorPixelFormat: MTLPixelFormat? = nil,
 				depthPixelFormat: MTLPixelFormat? = nil,
 				framesPerSecond: Int? = nil){
-		self.clearColor = clearColor!
+		self.clearColor = clearColor
 		self.colorPixelFormat = colorPixelFormat
 		self.depthPixelFormat = depthPixelFormat
 		
