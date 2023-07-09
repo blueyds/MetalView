@@ -269,10 +269,11 @@ IT may be necessary for the application/game to know the overall size of its vie
 			if let mainLoop = parent.onMainLoopCallback {
 				mainLoop( view )
 			} else if let onRenderCallback = parent.onRenderCallback {
-				if let drawable = view.currentDrawable,
-				   let commandBuffer = parent.commandQueue?.makeCommandBuffer(),
+				if let commandBuffer = parent.commandQueue?.makeCommandBuffer(),
 				   let renderPassDesciptor =  view.currentRenderPassDescriptor,
-				   let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDesciptor){
+				   let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDesciptor),
+				   let drawable = view.currentDrawable
+				{
 					onRenderCallback(renderCommandEncoder)
 					renderCommandEncoder.endEncoding()
 					commandBuffer.present(drawable)
