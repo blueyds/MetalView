@@ -22,12 +22,21 @@ public struct MetalView: Representable {
 	private var framesPerSecond: Int?
 	private var device: MTLDevice?
 	private var commandQueue: MTLCommandQueue? = nil
-	/// Set the isPaused and enableSetNeedsDisplay on the MTKView based on how we want to draw
+
+	///DrawingModeType determines how the View will respond and manage the render cycles.
+	///
+	///The MTKView class supports three drawing modes:
+	/// - Timed updates: The view redraws its contents based on an internal timer. In this case, which is the default behavior, both isPaused and enableSetNeedsDisplay are set to false. Use this mode for games and other animated content that’s regularly updated.
+ ///- Draw notifications: The view redraws itself when something invalidates its contents, usually because of a call to setNeedsDisplay() or some other view-related behavior. In this case, set isPaused and enableSetNeedsDisplay to true. Use this mode for apps with a more traditional workflow, where updates happen when data changes, but not on a regular timed interval.
+ ///- Explicit drawing: The view redraws its contents only when you explicitly call the draw() method. In this case, set isPaused to true and enableSetNeedsDisplay to false. Use this mode to create your own custom workflow.
 	public enum drawingModeType{
 		/// We expect the drawing loop to get called on each refresh.
-		/// Will set both isPaused and enableSetNeedsDisplay to false
+		/// Will set both `isPaused` and `enableSetNeedsDisplay` to false
 		case Timed
-		/// Will set both isPaused and enableSetNeedsDisplay to true
+		/// The view will redraw when something invalidates its contents.
+		/// Usually this is because of a call to `setNeedsDisplay()`
+		///
+		/// Will set both `isPaused` and `enableSetNeedsDisplay` to true
 		case Notifications
 		/// We will explicitiely force the screen to draw.
 		/// Will set isPaused to true and enableSetNeedsDisplay to false
@@ -38,35 +47,51 @@ public struct MetalView: Representable {
 	public typealias DrawCallFunction = ((MTKView) -> Void)
 	private var drawingMode: drawingModeType
 	private var onMainLoopCallback: DrawCallFunction? = nil
-	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = nil
+	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = {rCE in rCE.pushDebugGroup("Default Render Group")
+		rCE.popDebugGroup()
+	}
 	private var onSizeChangeCallback: ((CGSize) -> Void)? = nil
-//	private var onKeyboardCallback: (())
-//	public init(device: MTLDevice? = nil, drawingMode: drawingModeType = .Timed){
-//		if let _ = device {
-//			self.device = MTLCreateSystemDefaultDevice()
-//		} else {
-//			self.device = device
-//		}
-//		self.drawingMode = drawingMode
-//	}
-//
+
+
 /// Creates a new MetalView.
-/// '''
-/// MetalView(drawingMode: .Timed, clearColor: MTLClearColorMake(1.0, 0.3, 0.5, 0.0))
-/// '''
+///
+/// The following code creates a `MetalView` inside a `View` body with a drawing Mode and a clear Color.
+/// The Drawing mode is set to `.Timed` which will call the render function once per screen refresh.
+/// The Clear color is set  to be  Red.
+///
+///```swift
+///var body: some View{
+///   MetalView(
+///      drawingMode: .Timed,
+///      clearColor: MTLClearColorMake(1.0, 0.0, 0.0, 0.0) )
+///}
+///```
+///### Behind the scenes
+///The MetalView initializes an `MTKView` and presents it as either a `UIViewRepresentable` or
+///an `NSViewRepresentable` depending on the OS build.
+///
+///IF no ``onRender(render:)`` or ``onMainLoop(callBackFunction:)`` is specified
+///then the MetalView will create a simple ``onRender(render:)`` that will
+///push a debug group and pop it. The effect should be a clearColor on screen.
+///
 /// - Parameters:
 ///   - device: The Metal Device being used. If your app/game needs to keep up with the device then
 ///   you should explicitly create device and provide the reference to it here. nil is default.
 ///   If nil then the init will create a system defaultl device
-///   - drawingMode: The drawing mode we want to use. Based on the inputs it will set the appropriate
-///   values for isPaused and enableSetNeedsDisplay. The default is .Timed which sets both to false. In
-///   this case the draw loop will be called once per screen refresh.
-///   - clearColor: The MTLClearColor to use. The default isi nil. Use MTLClearColorMake to
-///   generate a color.
-///   - colorPixelFormat: The MTLPixelFormat to use for the colorPixelFormat. The default is nil.
+///   - drawingMode: ``drawingModeType`` The drawing mode we want to use. Based on the
+///   inputs it will set the appropriate values for isPaused and enableSetNeedsDisplay.
+///    The default is `drawingModeType.Timed` which sets both to false. In this case the draw loop
+///    will be called once per screen refresh.
+///   - clearColor: The  `MTLClearColor` to use. The default isi nil. Use `MTLClearColorMake` to
+///   generate a color. If nil, then the underlying `MTKView` will use (0, 0, 0, 1) as its default
+///   - colorPixelFormat: The `MTLPixelFormat` to use for the colorPixelFormat. The default is nil.
+///   If nil, then the underlying `MTKView` will use `MTLPixelFormat.bgra8Unorm` as it iss default.
+///   - depthPixelFormat: The `MTLPixelFormat` to use for the depthPixelFormat. The default is nil.
 ///   If nil, then no value is set and the view will use system defaults.
-///   - depthPixelFormat: The MTLPixelFormat to use for the depthPixelFormat. The default is nil.
-///   If nil, then no value is set and the view will use system defaults.
+///   - framesPerSecond: The framesPerSecond will be sent to the underlying `MTKView`. This number
+///   represents the `preferredFramesPerSecond` and is not guaranteed.
+///   The default isi nil. if nil, then  the underlying `MTKView` will default to 60 frames per second
+///
 	public init(device: MTLDevice? = nil,
 				drawingMode: drawingModeType = .Timed,
 				clearColor: MTLClearColor? = nil,
@@ -137,24 +162,29 @@ public struct MetalView: Representable {
 	}
 	#endif
 /**
+ The main render loop.
+
  This function can be used to declaratively set the onDraw Function. onDraw will be the main render
  loop in the app/game. You have to create the commandBuffer in your app. You are responsible for calling all
  render functions. if you set a .timed interval on initi then this function will be called once for each frame.
 
+ The following code calls the onMainLoop and then sets up  and implements the render pipeline
+
  ```swift
-	.onDraw(){view in
-			if let drawable = view.currentDrawable,
-				let commandBuffer = command.makeCommandBuffer(),
-				let renderPassDesciptor =  view.currentRenderPassDescriptor,
-				let renderCommandEncoder =
-				  commandBuffer.makeRenderCommandEncoder
+MetalView()
+.onMainLoop(){ view in
+   if let drawable = view.currentDrawable,
+     let commandBuffer = command.makeCommandBuffer(),
+     let renderPassDesciptor =  view.currentRenderPassDescriptor,
+     let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder
 						(descriptor: renderPassDesciptor){
-					renderCommandEncoder.endEncoding()
-					commandBuffer.present(drawable)
-					commandBuffer.commit()
-		}
+        renderCommandEncoder.endEncoding()
+		commandBuffer.present(drawable)
+		commandBuffer.commit()
+	}
  ```
- - Parameter action: This is a function that takes one parameters described in ``DrawCallFunction
+ - Parameter action: This is a function that takes one parameters described in
+ ``DrawCallFunction``
  	1) An MTKView allows your render pass to get the currentDrawable and the
  	  currentRenderPassDescriptor
  - Returns: a View
@@ -168,11 +198,28 @@ public struct MetalView: Representable {
 		return result
 	}
 
-	/// This function will present a simpler solutioni to the end user. The view will manage the device
-	/// and the command queue. It iwill generate the Render command encoder and send that
-	/// to the call back function
-	/// - Parameter action: Function that takes a MTLRenderCommandEncoder in
-	/// - Returns: some view so iti can be used declaratively in SwiftUI
+/**
+ A managed main event loop.
+
+This function will present a simpler loop to the programmer. The view will manage the device
+and the command queue. It iwill generate the Render command encoder and send that
+to the call back function The resulting code only has to send commands to the
+renderCommandEncoder. Once the function returns, the view will the present the drawable and
+commit the drawable to the commandBuffer.
+
+The following code will set the renderPipeliineState, set the vertexBuffer, and draw a triangle.
+```swift
+MetalView()
+.onRender(){ rCE in
+   rCE.setRenderPipelineState(renderPipelineState)
+   rCE.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+   rCE.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+}
+```
+ - Parameter action: Function that takes a MTLRenderCommandEncoder in
+ - Returns: some view so iti can be used declaratively in SwiftUI
+ */
+
 	public func onRender(render action: ((MTLRenderCommandEncoder) -> Void)? = nil) -> MetalView {
 		var result = self
 		if let _ = result.onMainLoopCallback {
@@ -182,6 +229,16 @@ public struct MetalView: Representable {
 		result.onRenderCallback = action
 		return result
 	}
+/**
+Function call back when the view Size has changed.
+
+IT may be necessary for the application/game to know the overall size of its viewport. The size can change
+ behind the scenes.
+
+ - Parameter callBack: Function that will take the CGSize. The paramenter passed to the function in
+ the CGSize will reflect the new overall size of the viewPort.
+
+*/
 	public func onSizeChange(_ callBack: @escaping ((CGSize)->Void))-> MetalView{
 		var result = self
 		result.onSizeChangeCallback = callBack
