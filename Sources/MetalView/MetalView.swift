@@ -47,9 +47,7 @@ public struct MetalView: Representable {
 	public typealias DrawCallFunction = ((MTKView) -> Void)
 	private var drawingMode: drawingModeType
 	private var onMainLoopCallback: DrawCallFunction? = nil
-	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = {rCE in rCE.pushDebugGroup("Default Render Group")
-		rCE.popDebugGroup()
-	}
+	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = nil
 	private var onSizeChangeCallback: ((CGSize) -> Void)? = nil
 
 
@@ -94,7 +92,7 @@ public struct MetalView: Representable {
 ///
 	public init(device: MTLDevice? = nil,
 				drawingMode: drawingModeType = .Timed,
-				clearColor: MTLClearColor? = nil,
+				clearColor: MTLClearColor? = MTLClearColorMake(1.0, 0.0, 0.0, 1.0),
 				colorPixelFormat: MTLPixelFormat? = nil,
 				depthPixelFormat: MTLPixelFormat? = nil,
 				framesPerSecond: Int? = nil){
@@ -254,7 +252,12 @@ IT may be necessary for the application/game to know the overall size of its vie
 
 		init(_ parent: MetalView){
 			self.parent = parent
+			if parent.onRenderCallback == nil || parent.onMainLoopCallback == nil {
+				// we need to initialize a command queue to at least clear the screen
+				self.parent.commandQueue = parent.device?.makeCommandQueue()
+			}
 		}
+
 		public func mtkView(_ view: MTKView, drawableSizeWillChange newSize: CGSize) {
 			self.size = newSize
 			if let onSizeChangeCB = parent.onSizeChangeCallback {
@@ -279,6 +282,18 @@ IT may be necessary for the application/game to know the overall size of its vie
 					commandBuffer.present(drawable)
 					commandBuffer.commit()
 				}
+			} else { // no render function was provided. in this case we will just clear screen when asked
+					if  let drawable = view.currentDrawable,
+						let commandBuffer = parent.commandQueue?.makeCommandBuffer(),
+					   let renderPassDesciptor =  view.currentRenderPassDescriptor,
+					   let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDesciptor)
+
+					{
+
+						renderCommandEncoder.endEncoding()
+						commandBuffer.present(drawable)
+						commandBuffer.commit()
+					}
 			}
 		}
 	}
