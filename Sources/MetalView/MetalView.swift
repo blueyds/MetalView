@@ -25,20 +25,17 @@ public struct MetalView: Representable {
 
 	///DrawingModeType determines how the View will respond and manage the render cycles.
 	///
-	///The MTKView class supports three drawing modes:
-	/// - Timed updates: The view redraws its contents based on an internal timer. In this case, which is the default behavior, both isPaused and enableSetNeedsDisplay are set to false. Use this mode for games and other animated content that’s regularly updated.
- ///- Draw notifications: The view redraws itself when something invalidates its contents, usually because of a call to setNeedsDisplay() or some other view-related behavior. In this case, set isPaused and enableSetNeedsDisplay to true. Use this mode for apps with a more traditional workflow, where updates happen when data changes, but not on a regular timed interval.
- ///- Explicit drawing: The view redraws its contents only when you explicitly call the draw() method. In this case, set isPaused to true and enableSetNeedsDisplay to false. Use this mode to create your own custom workflow.
+	///The MTKView class supports three drawing modes (only one is currently supported by MetalView):
+	/// - Timed updates: The view redraws its contents based on an internal timer. In this case, which is the default behavior, both isPaused and enableSetNeedsDisplay are set to false. Use this mode for games and other animated content that’s regularly updated
 	public enum drawingModeType{
 		/// We expect the drawing loop to get called on each refresh.
 		/// Will set both `isPaused` and `enableSetNeedsDisplay` to false
 		case Timed
-		/// The view will redraw when something invalidates its contents.
+		/// UNSUPPORTED in this version. The view will redraw when something invalidates its contents.
 		/// Usually this is because of a call to `setNeedsDisplay()`
-		///
 		/// Will set both `isPaused` and `enableSetNeedsDisplay` to true
 		case Notifications
-		/// We will explicitiely force the screen to draw.
+		/// UNSUPPORTED in this version. We will explicitiely force the screen to draw.
 		/// Will set isPaused to true and enableSetNeedsDisplay to false
 		case Explicit
 	}
@@ -116,9 +113,11 @@ public struct MetalView: Representable {
 				result.isPaused = false
 				result.enableSetNeedsDisplay = false
 			case .Notifications:
+				FatalError("Notifications drawingMode is currently not supported in MetalView")
 				result.isPaused = true
 				result.enableSetNeedsDisplay = true
 			case .Explicit:
+				FatalError("Explicit drawingMode is currently not supported in MetalView")
 				result.isPaused = true
 				result.enableSetNeedsDisplay = false
 		}
