@@ -113,11 +113,11 @@ public struct MetalView: Representable {
 				result.isPaused = false
 				result.enableSetNeedsDisplay = false
 			case .Notifications:
-				FatalError("Notifications drawingMode is currently not supported in MetalView")
+				fatalError("Notifications drawingMode is currently not supported in MetalView")
 				result.isPaused = true
 				result.enableSetNeedsDisplay = true
 			case .Explicit:
-				FatalError("Explicit drawingMode is currently not supported in MetalView")
+				fatalError("Explicit drawingMode is currently not supported in MetalView")
 				result.isPaused = true
 				result.enableSetNeedsDisplay = false
 		}
