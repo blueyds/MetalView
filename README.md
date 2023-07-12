@@ -14,7 +14,7 @@ a clearColor screen using (0, 0, 0, 1).
         MetalView()
 	}
 
-More documentation is available as built DocC.
+More documentation is available on [GitHub Pages](https://blueyds.github.io/MetalView/documentation/metalview/)
 
 ## Features
 
