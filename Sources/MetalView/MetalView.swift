@@ -45,7 +45,7 @@ public struct MetalView: Representable {
 	private var drawingMode: drawingModeType
 	private var onMainLoopCallback: DrawCallFunction? = nil
 	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = nil
-	private var onSizeChangeCallback: ((width: Float, height: Float) -> Void)? = nil
+	private var onSizeChangeCallback: ((( width: Float,  height: Float)) -> Void)? = nil
 
 
 /// Creates a new MetalView.
@@ -232,11 +232,10 @@ Function call back when the view Size has changed.
 IT may be necessary for the application/game to know the overall size of its viewport. The size can change
  behind the scenes.
 
- - Parameter callBack: Function that will take the CGSize. The paramenter passed to the function in
- the CGSize will reflect the new overall size of the viewPort.
+ - Parameter callBack: Function that will take width and height. The paramenter passed to the function will reflect the new overall size of the viewPort.
 
 */
-	public func onSizeChange(_ callBack: @escaping ((width: Float, height: Float)->Void))-> MetalView{
+	public func onSizeChange(_ callBack: @escaping (((width: Float,  height: Float))->Void))-> MetalView{
 		var result = self
 		result.onSizeChangeCallback = callBack
 		return result
@@ -260,7 +259,8 @@ IT may be necessary for the application/game to know the overall size of its vie
 		public func mtkView(_ view: MTKView, drawableSizeWillChange newSize: CGSize) {
 			self.size = newSize
 			if let onSizeChangeCB = parent.onSizeChangeCallback {
-				onSizeChangeCB(width: Float(newSize.width), height: Float(newSize.height))
+				let tupleSize = (width: Float(newSize.width), height: Float(newSize.height))
+				onSizeChangeCB(tupleSize)
 			}
 		}
 
