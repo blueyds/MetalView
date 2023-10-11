@@ -45,7 +45,7 @@ public struct MetalView: Representable {
 	private var drawingMode: drawingModeType
 	private var onMainLoopCallback: DrawCallFunction? = nil
 	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = nil
-	private var onSizeChangeCallback: ((CGSize) -> Void)? = nil
+	private var onSizeChangeCallback: ((width: Float, height: Float) -> Void)? = nil
 
 
 /// Creates a new MetalView.
@@ -186,7 +186,7 @@ MetalView()
  	  currentRenderPassDescriptor
  - Returns: a View
  */
-	public func onMainLoop( callBackFunction: @escaping DrawCallFunction) -> MetalView {
+	public func onMainLoop( _ callBackFunction: @escaping DrawCallFunction) -> MetalView {
 		var result = self
 		if let _ = result.onRenderCallback {
 			result.onRenderCallback = nil
@@ -217,7 +217,7 @@ MetalView()
  - Returns: some view so iti can be used declaratively in SwiftUI
  */
 
-	public func onRender(render action: ((MTLRenderCommandEncoder) -> Void)? = nil) -> MetalView {
+	public func onRender(_  action: ((MTLRenderCommandEncoder) -> Void)? = nil) -> MetalView {
 		var result = self
 		if let _ = result.onMainLoopCallback {
 			result.onMainLoopCallback = nil
@@ -236,7 +236,7 @@ IT may be necessary for the application/game to know the overall size of its vie
  the CGSize will reflect the new overall size of the viewPort.
 
 */
-	public func onSizeChange(_ callBack: @escaping ((CGSize)->Void))-> MetalView{
+	public func onSizeChange(_ callBack: @escaping ((width: Float, height: Float)->Void))-> MetalView{
 		var result = self
 		result.onSizeChangeCallback = callBack
 		return result
@@ -260,7 +260,7 @@ IT may be necessary for the application/game to know the overall size of its vie
 		public func mtkView(_ view: MTKView, drawableSizeWillChange newSize: CGSize) {
 			self.size = newSize
 			if let onSizeChangeCB = parent.onSizeChangeCallback {
-				onSizeChangeCB(newSize)
+				onSizeChangeCB(width: Float(newSize.width), height: Float(newSize.height))
 			}
 		}
 
