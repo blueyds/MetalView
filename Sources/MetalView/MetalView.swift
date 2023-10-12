@@ -260,7 +260,7 @@ IT may be necessary for the application/game to know the overall size of its vie
 		public func mtkView(_ view: MTKView, drawableSizeWillChange newSize: CGSize) {
 			self.size = newSize
 			if let onSizeChangeCB = parent.onSizeChangeCallback {
-				onSizeChangeCB(Float(newSize.width), Float(newSize.width))
+				onSizeChangeCB(Float(newSize.width), Float(newSize.height))
 			}
 		}
 
