@@ -23,26 +23,10 @@ public struct MetalView: Representable {
 	private var device: MTLDevice?
 	private var commandQueue: MTLCommandQueue? = nil
 
-	///DrawingModeType determines how the View will respond and manage the render cycles.
-	///
-	///The MTKView class supports three drawing modes (only one is currently supported by MetalView):
-	/// - Timed updates: The view redraws its contents based on an internal timer. In this case, which is the default behavior, both isPaused and enableSetNeedsDisplay are set to false. Use this mode for games and other animated content that’s regularly updated
-	public enum drawingModeType{
-		/// We expect the drawing loop to get called on each refresh.
-		/// Will set both `isPaused` and `enableSetNeedsDisplay` to false
-		case Timed
-		/// UNSUPPORTED in this version. The view will redraw when something invalidates its contents.
-		/// Usually this is because of a call to `setNeedsDisplay()`
-		/// Will set both `isPaused` and `enableSetNeedsDisplay` to true
-		case Notifications
-		/// UNSUPPORTED in this version. We will explicitiely force the screen to draw.
-		/// Will set isPaused to true and enableSetNeedsDisplay to false
-		case Explicit
-	}
+	
 	/// typealias for the main draw callback function used by the view. The function used will be the 
 	/// main loop
 	public typealias DrawCallFunction = ((MTKView) -> Void)
-	private var drawingMode: drawingModeType
 	private var onMainLoopCallback: DrawCallFunction? = nil
 	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = nil
 	private var onSizeChangeCallback: ((Float, Float) -> Void)? = nil
@@ -57,7 +41,6 @@ public struct MetalView: Representable {
 ///```swift
 ///var body: some View{
 ///   MetalView(
-///      drawingMode: .Timed,
 ///      clearColor: MTLClearColorMake(1.0, 0.0, 0.0, 0.0) )
 ///}
 ///```
@@ -73,10 +56,6 @@ public struct MetalView: Representable {
 ///   - device: The Metal Device being used. If your app/game needs to keep up with the device then
 ///   you should explicitly create device and provide the reference to it here. nil is default.
 ///   If nil then the init will create a system defaultl device
-///   - drawingMode: ``drawingModeType`` The drawing mode we want to use. Based on the
-///   inputs it will set the appropriate values for isPaused and enableSetNeedsDisplay.
-///    The default is `drawingModeType.Timed` which sets both to false. In this case the draw loop
-///    will be called once per screen refresh.
 ///   - clearColor: The  `MTLClearColor` to use. The default isi nil. Use `MTLClearColorMake` to
 ///   generate a color. If nil, then the underlying `MTKView` will use (0, 0, 0, 1) as its default
 ///   - colorPixelFormat: The `MTLPixelFormat` to use for the colorPixelFormat. The default is nil.
@@ -88,7 +67,6 @@ public struct MetalView: Representable {
 ///   The default isi nil. if nil, then  the underlying `MTKView` will default to 60 frames per second
 ///
 	public init(device: MTLDevice? = nil,
-				drawingMode: drawingModeType = .Timed,
 				clearColor: MTLClearColor? = MTLClearColorMake(1.0, 0.0, 0.0, 1.0),
 				colorPixelFormat: MTLPixelFormat? = nil,
 				depthPixelFormat: MTLPixelFormat? = nil,
@@ -108,19 +86,8 @@ public struct MetalView: Representable {
 	}
 	private func setDrawingMode(for view: MTKView) -> MTKView{
 		let result = view
-		switch drawingMode {
-			case .Timed:
-				result.isPaused = false
-				result.enableSetNeedsDisplay = false
-			case .Notifications:
-				fatalError("Notifications drawingMode is currently not supported in MetalView")
-				result.isPaused = true
-				result.enableSetNeedsDisplay = true
-			case .Explicit:
-				fatalError("Explicit drawingMode is currently not supported in MetalView")
-				result.isPaused = true
-				result.enableSetNeedsDisplay = false
-		}
+		result.isPaused = false
+		result.enableSetNeedsDisplay = false
 		return result
 	}
 	private func makeMTKView(context: Context) -> MTKView {
