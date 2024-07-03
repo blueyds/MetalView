@@ -81,7 +81,6 @@ public struct MetalView: Representable {
 			self.device = MTLCreateSystemDefaultDevice()
 
 		}
-		self.drawingMode = drawingMode
 		self.framesPerSecond = framesPerSecond
 	}
 	private func setDrawingMode(for view: MTKView) -> MTKView{
