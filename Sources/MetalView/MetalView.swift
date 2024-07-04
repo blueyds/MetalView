@@ -48,8 +48,8 @@ public struct MetalView: Representable {
 ///The MetalView initializes an `MTKView` and presents it as either a `UIViewRepresentable` or
 ///an `NSViewRepresentable` depending on the OS build.
 ///
-///IF no ``onRender(render:)`` or ``onMainLoop(callBackFunction:)`` is specified
-///then the MetalView will create a simple ``onRender(render:)`` that will
+///IF no ``onRender(_:)`` or ``onMainLoop(_:)`` is specified
+///then the MetalView will create a simple ``onRender(_:)`` that will
 ///push a debug group and pop it. The effect should be a clearColor on screen.
 ///
 /// - Parameters:
