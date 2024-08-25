@@ -202,7 +202,7 @@ This function will be used when youi do not want to fully manage the rendering s
 
 **/
 
-	public func onUpdate(_ action: ()->Void)-> MetalView{
+	public func onUpdate(_ action: @escaping ()->Void)-> MetalView{
 		var result = self
 		result.onUpdateCallback = action
 		return result
