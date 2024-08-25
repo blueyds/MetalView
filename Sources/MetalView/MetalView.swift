@@ -30,6 +30,7 @@ public struct MetalView: Representable {
 	private var onMainLoopCallback: DrawCallFunction? = nil
 	private var onRenderCallback: ((MTLRenderCommandEncoder)-> Void)? = nil
 	private var onSizeChangeCallback: ((Float, Float) -> Void)? = nil
+	private var onUpdateCallback: (() -> Void)? = nil
 
 
 /// Creates a new MetalView.
@@ -182,6 +183,7 @@ MetalView()
  - Parameter action: Function that takes a MTLRenderCommandEncoder in
  - Returns: some view so iti can be used declaratively in SwiftUI
  */
+	
 
 	public func onRender(_  action: ((MTLRenderCommandEncoder) -> Void)? = nil) -> MetalView {
 		var result = self
@@ -192,6 +194,21 @@ MetalView()
 		result.onRenderCallback = action
 		return result
 	}
+/**
+
+An update loop
+
+This function will be used when youi do not want to fully manage the rendering setup so you use onRender instead of onMainLoop. onMainLoop will ignore this funciton and you would need to call this inside your mainLoop if you use onMainloop. The managed loop will call this inside the managed main event loop before it makes any calls to the renderer. It takes no arguments and returns no arguments. each call should equate to one frame cycle
+
+**/
+
+	public func onUpdate(_ action: ()->Void)-> MetalView{
+		var result = self
+		result.onUpdateCallback = action
+		return result
+	}	
+
+
 /**
 Function call back when the view Size has changed.
 
@@ -237,6 +254,10 @@ IT may be necessary for the application/game to know the overall size of its vie
 			if let mainLoop = parent.onMainLoopCallback {
 				mainLoop( view )
 			} else if let onRenderCallback = parent.onRenderCallback {
+				// check to see if we need to update first
+				if let update = parent.onUpdateCallback {
+					update()	
+				}
 				if let commandBuffer = parent.commandQueue?.makeCommandBuffer(),
 				   let renderPassDesciptor =  view.currentRenderPassDescriptor,
 				   let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDesciptor),
